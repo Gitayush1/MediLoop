@@ -1,0 +1,481 @@
+// MediLoop – Prisma Schema
+// PostgreSQL database
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Enums
+// ─────────────────────────────────────────────────────────────
+
+enum UserRole {
+  PATIENT
+  CAREGIVER
+  ADMIN
+}
+
+enum MedicationStatus {
+  ACTIVE
+  PAUSED
+  COMPLETED
+}
+
+enum MedicationForm {
+  TABLET
+  CAPSULE
+  SYRUP
+  INJECTION
+  DROPS
+  CREAM
+  INHALER
+  PATCH
+  POWDER
+  OTHER
+}
+
+enum MedicationFrequency {
+  ONCE_DAILY
+  TWICE_DAILY
+  THREE_TIMES_DAILY
+  FOUR_TIMES_DAILY
+  EVERY_OTHER_DAY
+  WEEKLY
+  AS_NEEDED
+  CUSTOM
+}
+
+enum MealRelation {
+  BEFORE_MEAL
+  AFTER_MEAL
+  WITH_MEAL
+  ANY
+}
+
+enum DoseStatus {
+  SCHEDULED
+  TAKEN
+  SKIPPED
+  MISSED
+  SNOOZED
+}
+
+enum PrescriptionStatus {
+  UPLOADED
+  PROCESSING
+  PROCESSED
+  FAILED
+}
+
+enum CaregiverRelationshipStatus {
+  PENDING
+  ACTIVE
+  REVOKED
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  REVOKED
+}
+
+enum NotificationType {
+  DOSE_REMINDER
+  UPCOMING_DOSE
+  MISSED_DOSE
+  REFILL_WARNING
+  CAREGIVER_ALERT
+  SYSTEM
+}
+
+enum InventoryEntryType {
+  INITIAL
+  PURCHASE
+  ADJUSTMENT
+}
+
+enum DevicePlatform {
+  IOS
+  ANDROID
+  WEB
+}
+
+// ─────────────────────────────────────────────────────────────
+// User & Profile
+// ─────────────────────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  passwordHash  String
+  emailVerified Boolean   @default(false)
+  role          UserRole  @default(PATIENT)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+
+  // Relations
+  profile                    Profile?
+  medications                Medication[]
+  prescriptions              Prescription[]
+  doseEvents                 DoseEvent[]
+  notificationPreference     NotificationPreference?
+  notifications              Notification[]
+  devices                    Device[]
+  auditLogs                  AuditLog[]
+  medicationInventoryEntries MedicationInventory[]
+  refreshTokens              RefreshToken[]
+
+  // Caregiver relationships
+  caregiverRelationshipsAsPatient    CaregiverRelationship[] @relation("PatientRelationships")
+  caregiverRelationshipsAsCaregiver  CaregiverRelationship[] @relation("CaregiverRelationships")
+  invitationsSent                    Invitation[]            @relation("InvitationSender")
+
+  @@index([email])
+  @@index([role])
+  @@map("users")
+}
+
+model Profile {
+  id          String    @id @default(uuid())
+  userId      String    @unique
+  firstName   String
+  lastName    String?
+  dateOfBirth DateTime? @db.Date
+  phone       String?
+  avatarUrl   String?
+  timezone    String    @default("Asia/Kolkata")
+  language    String    @default("en")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("profiles")
+}
+
+model RefreshToken {
+  id          String   @id @default(uuid())
+  userId      String
+  tokenHash   String   @unique
+  expiresAt   DateTime
+  revokedAt   DateTime?
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([tokenHash])
+  @@map("refresh_tokens")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Medications & Scheduling
+// ─────────────────────────────────────────────────────────────
+
+model Medication {
+  id                 String              @id @default(uuid())
+  userId             String
+  prescriptionId     String?
+  name               String
+  genericName        String?
+  dosage             String?
+  form               MedicationForm?
+  frequency          MedicationFrequency
+  timingInstructions String?
+  startDate          DateTime            @db.Date
+  endDate            DateTime?           @db.Date
+  initialQuantity    Int?
+  currentQuantity    Int?
+  unit               String?             @default("tablets")
+  notes              String?
+  status             MedicationStatus    @default(ACTIVE)
+  color              String?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  deletedAt          DateTime?
+
+  // Relations
+  user              User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  prescription      Prescription?         @relation(fields: [prescriptionId], references: [id])
+  schedules         MedicationSchedule[]
+  doseEvents        DoseEvent[]
+  inventoryEntries  MedicationInventory[]
+  refillPrediction  RefillPrediction?
+  prescriptionMeds  PrescriptionMedicine[]
+
+  @@index([userId, status, deletedAt])
+  @@index([userId, deletedAt])
+  @@map("medications")
+}
+
+model MedicationSchedule {
+  id           String       @id @default(uuid())
+  medicationId String
+  timeOfDay    String       // HH:MM in user's timezone
+  mealRelation MealRelation @default(ANY)
+  daysOfWeek   Int[]        // 0=Sun, 1=Mon, ..., 6=Sat. Empty = every day
+  isActive     Boolean      @default(true)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  medication Medication  @relation(fields: [medicationId], references: [id], onDelete: Cascade)
+  doseEvents DoseEvent[]
+
+  @@index([medicationId])
+  @@map("medication_schedules")
+}
+
+model DoseEvent {
+  id           String     @id @default(uuid())
+  medicationId String
+  scheduleId   String
+  userId       String
+  scheduledAt  DateTime
+  takenAt      DateTime?
+  status       DoseStatus @default(SCHEDULED)
+  snoozedUntil DateTime?
+  notes        String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  medication Medication         @relation(fields: [medicationId], references: [id], onDelete: Cascade)
+  schedule   MedicationSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  user       User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, scheduledAt])
+  @@index([medicationId, status])
+  @@index([userId, status, scheduledAt])
+  @@map("dose_events")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Prescriptions
+// ─────────────────────────────────────────────────────────────
+
+model Prescription {
+  id               String             @id @default(uuid())
+  userId           String
+  fileUrl          String?
+  fileKey          String?
+  mimeType         String?
+  originalName     String?
+  fileSize         Int?
+  status           PrescriptionStatus @default(UPLOADED)
+  doctorName       String?
+  patientName      String?
+  prescriptionDate DateTime?          @db.Date
+  notes            String?
+  ocrText          String?
+  processingError  String?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  deletedAt        DateTime?
+
+  user        User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  medications Medication[]
+  medicines   PrescriptionMedicine[]
+
+  @@index([userId, deletedAt])
+  @@map("prescriptions")
+}
+
+model PrescriptionMedicine {
+  id             String    @id @default(uuid())
+  prescriptionId String
+  medicationId   String?
+  name           String
+  dosage         String?
+  form           String?
+  frequency      String?
+  duration       String?
+  instructions   String?
+  confidence     Float
+  userConfirmed  Boolean   @default(false)
+  confirmedAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  prescription Prescription @relation(fields: [prescriptionId], references: [id], onDelete: Cascade)
+  medication   Medication?  @relation(fields: [medicationId], references: [id])
+
+  @@index([prescriptionId])
+  @@map("prescription_medicines")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Inventory & Refill
+// ─────────────────────────────────────────────────────────────
+
+model MedicationInventory {
+  id           String             @id @default(uuid())
+  medicationId String
+  userId       String
+  type         InventoryEntryType
+  quantity     Int
+  note         String?
+  createdAt    DateTime           @default(now())
+
+  medication Medication @relation(fields: [medicationId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([medicationId])
+  @@map("medication_inventory")
+}
+
+model RefillPrediction {
+  id                     String    @id @default(uuid())
+  medicationId           String    @unique
+  estimatedRemaining     Int
+  estimatedRunOutDate    DateTime? @db.Date
+  recommendedReorderDate DateTime? @db.Date
+  adherenceRate          Float     @default(1.0)
+  dailyConsumptionRate   Float
+  warningThreshold       Int       @default(7) // days
+  warningAcknowledged    Boolean   @default(false)
+  calculatedAt           DateTime  @default(now())
+
+  medication Medication @relation(fields: [medicationId], references: [id], onDelete: Cascade)
+
+  @@map("refill_predictions")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Caregivers
+// ─────────────────────────────────────────────────────────────
+
+model CaregiverRelationship {
+  id          String                      @id @default(uuid())
+  patientId   String
+  caregiverId String
+  permissions String[]                    // CaregiverPermission enum values
+  status      CaregiverRelationshipStatus @default(PENDING)
+  createdAt   DateTime                    @default(now())
+  updatedAt   DateTime                    @updatedAt
+
+  patient    User @relation("PatientRelationships", fields: [patientId], references: [id], onDelete: Cascade)
+  caregiver  User @relation("CaregiverRelationships", fields: [caregiverId], references: [id], onDelete: Cascade)
+
+  @@unique([patientId, caregiverId])
+  @@index([caregiverId])
+  @@map("caregiver_relationships")
+}
+
+model Invitation {
+  id          String           @id @default(uuid())
+  patientId   String
+  inviteeEmail String
+  tokenHash   String           @unique
+  permissions String[]
+  status      InvitationStatus @default(PENDING)
+  expiresAt   DateTime
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  patient User @relation("InvitationSender", fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId])
+  @@index([inviteeEmail])
+  @@map("invitations")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Notifications
+// ─────────────────────────────────────────────────────────────
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  type      NotificationType
+  title     String
+  body      String
+  data      Json?
+  read      Boolean          @default(false)
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read, createdAt])
+  @@map("notifications")
+}
+
+model NotificationPreference {
+  id                    String    @id @default(uuid())
+  userId                String    @unique
+  doseReminders         Boolean   @default(true)
+  missedDoseAlerts      Boolean   @default(true)
+  refillAlerts          Boolean   @default(true)
+  caregiverAlerts       Boolean   @default(true)
+  reminderMinutesBefore Int       @default(15)
+  quietHoursStart       String?   // HH:MM
+  quietHoursEnd         String?   // HH:MM
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notification_preferences")
+}
+
+model Device {
+  id        String         @id @default(uuid())
+  userId    String
+  pushToken String
+  platform  DevicePlatform
+  deviceId  String
+  isActive  Boolean        @default(true)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, deviceId])
+  @@index([userId, isActive])
+  @@map("devices")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Audit
+// ─────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String?
+  action     String
+  resource   String
+  resourceId String?
+  metadata   Json?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([resource, resourceId])
+  @@map("audit_logs")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Email Verification / Password Reset
+// ─────────────────────────────────────────────────────────────
+
+model VerificationToken {
+  id        String   @id @default(uuid())
+  email     String
+  tokenHash String   @unique
+  type      String   // EMAIL_VERIFICATION | PASSWORD_RESET
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([email, type])
+  @@map("verification_tokens")
+}

@@ -1,0 +1,27 @@
+{
+  "name": "mediloop",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/mobile",
+    "apps/server",
+    "apps/admin",
+    "packages/shared"
+  ],
+  "scripts": {
+    "dev:server": "yarn workspace @mediloop/server dev",
+    "dev:mobile": "yarn workspace @mediloop/mobile start",
+    "dev:admin": "yarn workspace @mediloop/admin dev",
+    "build:server": "yarn workspace @mediloop/server build",
+    "test:server": "yarn workspace @mediloop/server test",
+    "test:mobile": "yarn workspace @mediloop/mobile test",
+    "db:migrate": "yarn workspace @mediloop/server db:migrate",
+    "db:seed": "yarn workspace @mediloop/server db:seed",
+    "db:reset": "yarn workspace @mediloop/server db:reset",
+    "lint": "yarn workspaces run lint",
+    "type-check": "yarn workspaces run type-check"
+  },
+  "devDependencies": {
+    "prettier": "^3.2.5"
+  }
+}
