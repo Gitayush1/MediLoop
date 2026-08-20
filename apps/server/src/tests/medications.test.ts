@@ -4,7 +4,6 @@ import { prisma } from '../lib/prisma';
 
 const API = '/api/v1';
 let accessToken: string;
-let userId: string;
 
 async function getAuthToken(email: string) {
   const res = await request(app)
@@ -17,7 +16,6 @@ beforeAll(async () => {
   await prisma.user.deleteMany({ where: { email: { contains: '@med-test.mediloop' } } });
   const auth = await getAuthToken('med@med-test.mediloop');
   accessToken = auth.tokens.accessToken;
-  userId = auth.user.id;
 });
 
 afterAll(async () => {

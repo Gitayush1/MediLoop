@@ -30,7 +30,7 @@ export class RefillsService {
 
     // Classify urgency
     const now = new Date();
-    return refills.map((r) => {
+    return refills.map((r: { estimatedRunOutDate: Date | null; warningThreshold: number }) => {
       const daysLeft = r.estimatedRunOutDate
         ? Math.ceil((r.estimatedRunOutDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
         : null;

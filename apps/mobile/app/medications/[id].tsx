@@ -106,7 +106,7 @@ export default function MedicationDetailScreen() {
         </View>
 
         {/* Header card */}
-        <Card style={[styles.headerCard, { borderLeftColor: color, borderLeftWidth: 4 }]}>
+        <Card style={[styles.headerCard, { borderLeftColor: color, borderLeftWidth: 4 }] as any}>
           <View style={styles.headerRow}>
             <View style={styles.medIcon}>
               <Text style={styles.medIconText}>💊</Text>
@@ -140,7 +140,7 @@ export default function MedicationDetailScreen() {
             </Card>
           )}
           {refill?.daysLeft !== undefined && (
-            <Card style={[styles.metricCard, refill.isRunningLow && { borderColor: Colors.error }]}>
+            <Card style={[styles.metricCard, refill.isRunningLow ? { borderColor: Colors.error } : null] as any}>
               <Text style={[styles.metricValue, { color: refill.isRunningLow ? Colors.error : Colors.textPrimary }]}>
                 {refill.daysLeft}d
               </Text>
@@ -153,7 +153,7 @@ export default function MedicationDetailScreen() {
         <Card style={styles.detailsCard}>
           <Text style={styles.cardTitle}>Schedule</Text>
           <DetailRow icon="🔄" label="Frequency" value={FREQUENCY_LABELS[med.frequency] ?? med.frequency} />
-          {med.schedules.map((s) => (
+          {med.schedules.map((s: any) => (
             <DetailRow key={s.id} icon="🕐" label="Time" value={`${s.timeOfDay} · ${MEAL_RELATION_LABELS[s.mealRelation] ?? s.mealRelation}`} />
           ))}
           {med.form && <DetailRow icon="💊" label="Form" value={MEDICATION_FORM_LABELS[med.form] ?? med.form} />}

@@ -6,7 +6,6 @@ import { config } from '../../config';
 import {
   AuthenticationError,
   ConflictError,
-  NotFoundError,
   BadRequestError,
 } from '../../lib/errors';
 import { logger } from '../../lib/logger';
@@ -34,13 +33,13 @@ interface LoginInput {
 export class AuthService {
   private signAccessToken(payload: { userId: string; email: string; role: string }): string {
     return jwt.sign(payload, config.JWT_SECRET, {
-      expiresIn: config.JWT_ACCESS_EXPIRY,
+      expiresIn: config.JWT_ACCESS_EXPIRY as any,
     });
   }
 
   private signRefreshToken(payload: { userId: string }): string {
     return jwt.sign(payload, config.JWT_REFRESH_SECRET, {
-      expiresIn: config.JWT_REFRESH_EXPIRY,
+      expiresIn: config.JWT_REFRESH_EXPIRY as any,
     });
   }
 

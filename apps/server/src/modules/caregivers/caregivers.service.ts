@@ -201,7 +201,7 @@ export class CaregiversService {
     });
 
     const counts = events.reduce(
-      (acc, e) => {
+      (acc: Record<string, number>, e: { status: string; _count: { status: number } }) => {
         acc[e.status] = e._count.status;
         return acc;
       },

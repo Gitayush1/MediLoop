@@ -19,7 +19,7 @@ export class NotificationsService {
         type: payload.type as never,
         title: payload.title,
         body: payload.body,
-        data: payload.data ?? null,
+        data: (payload.data as object) ?? undefined,
       },
     });
 
@@ -64,7 +64,7 @@ export class NotificationsService {
     // Send via Expo Push API
     if (config.EXPO_ACCESS_TOKEN) {
       await this.sendExpoNotifications(
-        devices.map((d) => d.pushToken),
+        devices.map((d: { pushToken: string }) => d.pushToken),
         payload,
       );
     } else {
@@ -142,6 +142,33 @@ export class NotificationsService {
     }
     // Overnight quiet hours (e.g., 22:00 – 07:00)
     return current >= start || current <= end;
+  }
+
+  async registerDevice(
+    userId: string,
+    data: { pushToken: string; platform: 'IOS' | 'ANDROID' | 'WEB'; deviceId: string },
+  ) {
+    return prisma.device.upsert({
+      where: { userId_deviceId: { userId, deviceId: data.deviceId } },
+      create: {
+        userId,
+        pushToken: data.pushToken,
+        platform: data.platform,
+        deviceId: data.deviceId,
+        isActive: true,
+      },
+      update: {
+        pushToken: data.pushToken,
+        isActive: true,
+      },
+    });
+  }
+
+  async deregisterDevice(userId: string, deviceId: string): Promise<void> {
+    await prisma.device.updateMany({
+      where: { userId, deviceId },
+      data: { isActive: false },
+    });
   }
 
   private async sendExpoNotifications(tokens: string[], payload: PushPayload): Promise<void> {

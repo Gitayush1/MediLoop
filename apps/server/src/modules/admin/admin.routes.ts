@@ -114,11 +114,11 @@ router.get('/daily-stats', async (_req, res, next) => {
     `;
 
     sendSuccess(res, {
-      userRegistrations: usersByDay.map((r) => ({
+      userRegistrations: usersByDay.map((r: { date: string; count: bigint }) => ({
         date: r.date,
         count: Number(r.count),
       })),
-      doseAdherence: dosesByDay.map((r) => ({
+      doseAdherence: dosesByDay.map((r: { date: string; status: string; count: bigint }) => ({
         date: r.date,
         status: r.status,
         count: Number(r.count),

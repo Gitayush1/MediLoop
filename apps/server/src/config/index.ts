@@ -39,6 +39,7 @@ const configSchema = z.object({
   RATE_LIMIT_AUTH_MAX: z.coerce.number().default(10),
   CORS_ORIGINS: z.string().default('http://localhost:8081,http://localhost:5173'),
   ADMIN_SECRET: z.string().default('change_me_in_production'),
+  API_BASE_URL: z.string().url().default('http://localhost:3000/api/v1'),
   ANALYTICS_ENABLED: z
     .string()
     .transform((v) => v === 'true')

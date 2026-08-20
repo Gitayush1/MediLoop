@@ -10,7 +10,6 @@ const config: Config = {
   },
   globalSetup: '<rootDir>/src/tests/setup.ts',
   globalTeardown: '<rootDir>/src/tests/teardown.ts',
-  setupFilesAfterFramework: ['@testing-library/jest-native/extend-expect'],
   coverageDirectory: './coverage',
   collectCoverageFrom: [
     'src/**/*.ts',

@@ -3,9 +3,9 @@
 // Generates DoseEvent records from a Medication + MedicationSchedule
 // ─────────────────────────────────────────────────────────────
 
-import { MedicationFrequency } from '@prisma/client';
+import { MedicationFrequency } from '@mediloop/shared';
 
-interface ScheduleTime {
+export interface ScheduleTime {
   time: string; // HH:MM
   mealRelation?: string;
 }

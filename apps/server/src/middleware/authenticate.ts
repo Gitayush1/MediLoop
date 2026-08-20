@@ -2,7 +2,6 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { config } from '../config';
 import { AuthenticationError } from '../lib/errors';
-import { prisma } from '../lib/prisma';
 
 export interface AuthenticatedUser {
   userId: string;

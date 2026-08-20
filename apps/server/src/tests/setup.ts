@@ -1,5 +1,4 @@
 import { execSync } from 'child_process';
-import path from 'path';
 
 // Point to test database
 process.env.NODE_ENV = 'test';

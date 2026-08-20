@@ -2,7 +2,8 @@ import { prisma } from '../../lib/prisma';
 import { NotFoundError, AuthorizationError } from '../../lib/errors';
 import { cacheDelPattern } from '../../lib/redis';
 import { generateDoseEvents } from './dose-scheduler';
-import { MedicationFrequency, MedicationStatus } from '@prisma/client';
+import type { Prisma } from '@prisma/client';
+import type { MedicationFrequency, MedicationStatus } from '@mediloop/shared';
 
 interface CreateMedicationInput {
   name: string;
@@ -39,7 +40,7 @@ export class MedicationsService {
     const where = {
       userId,
       deletedAt: null,
-      ...(status ? { status } : {}),
+      ...(status ? { status: status as any } : {}),
     };
 
     const [medications, total] = await Promise.all([
@@ -127,7 +128,7 @@ export class MedicationsService {
     const profile = await prisma.profile.findUnique({ where: { userId } });
     const timezone = profile?.timezone ?? 'Asia/Kolkata';
 
-    const medication = await prisma.$transaction(async (tx) => {
+    const medication = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // 1. Create medication
       const med = await tx.medication.create({
         data: {
@@ -135,8 +136,8 @@ export class MedicationsService {
           name: input.name,
           genericName: input.genericName,
           dosage: input.dosage,
-          form: input.form as never,
-          frequency: input.frequency,
+          form: (input.form as any) ?? undefined,
+          frequency: input.frequency as any,
           timingInstructions: input.timingInstructions,
           startDate: new Date(input.startDate),
           endDate: input.endDate ? new Date(input.endDate) : null,
@@ -171,7 +172,7 @@ export class MedicationsService {
           data: {
             medicationId: med.id,
             timeOfDay: scheduleTime.time,
-            mealRelation: (scheduleTime.mealRelation as never) ?? 'ANY',
+            mealRelation: (scheduleTime.mealRelation as any) ?? 'ANY',
             isActive: true,
           },
         });
@@ -189,7 +190,7 @@ export class MedicationsService {
         });
 
         if (doseInputs.length > 0) {
-          await tx.doseEvent.createMany({ data: doseInputs, skipDuplicates: true });
+          await tx.doseEvent.createMany({ data: doseInputs as any, skipDuplicates: true });
         }
       }
 
@@ -217,9 +218,9 @@ export class MedicationsService {
       data: {
         ...(input.name !== undefined && { name: input.name }),
         ...(input.dosage !== undefined && { dosage: input.dosage }),
-        ...(input.form !== undefined && { form: input.form as never }),
+        ...(input.form !== undefined && { form: input.form as any }),
         ...(input.notes !== undefined && { notes: input.notes }),
-        ...(input.status !== undefined && { status: input.status }),
+        ...(input.status !== undefined && { status: input.status as any }),
         ...(input.endDate !== undefined && { endDate: new Date(input.endDate) }),
       },
     });

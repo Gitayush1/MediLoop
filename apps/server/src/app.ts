@@ -19,6 +19,7 @@ import refillsRoutes from './modules/refills/refills.routes';
 import notificationsRoutes from './modules/notifications/notifications.routes';
 import caregiversRoutes from './modules/caregivers/caregivers.routes';
 import adminRoutes from './modules/admin/admin.routes';
+import aiRoutes from './modules/ai/ai.routes';
 
 const app = express();
 
@@ -127,6 +128,7 @@ app.use(`${API_PREFIX}/refills`, refillsRoutes);
 app.use(`${API_PREFIX}/notifications`, notificationsRoutes);
 app.use(`${API_PREFIX}/caregivers`, caregiversRoutes);
 app.use(`${API_PREFIX}/admin`, adminRoutes);
+app.use(`${API_PREFIX}/ai`, aiRoutes);
 
 // ─────────────────────────────────────────────────────────────
 // Error handling (must be last)

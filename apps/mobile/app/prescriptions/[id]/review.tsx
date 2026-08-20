@@ -38,7 +38,7 @@ export default function PrescriptionReviewScreen() {
   React.useEffect(() => {
     if (prescription?.medicines && !medicines) {
       setMedicines(
-        prescription.medicines.map((m) => ({
+        prescription.medicines.map((m: any) => ({
           ...m,
           selected: m.confidence >= 0.7,
           editedName: m.name,
@@ -91,7 +91,7 @@ export default function PrescriptionReviewScreen() {
           startDate: today,
           endDate,
           scheduleTimes: scheduleTime,
-          timingInstructions: med.editedInstructions || undefined,
+          notes: med.editedInstructions || undefined,
           prescriptionId: id,
         });
       }
@@ -215,7 +215,7 @@ function MedicineReviewCard({ medicine, isExpanded, onToggleExpand, onToggleSele
   const confidenceColor = confidencePct >= 85 ? Colors.success : confidencePct >= 65 ? Colors.warning : Colors.error;
 
   return (
-    <Card style={[styles.medCard, !medicine.selected && styles.medCardDeselected]}>
+    <Card style={[styles.medCard, !medicine.selected && styles.medCardDeselected] as any}>
       {/* Card header */}
       <TouchableOpacity onPress={onToggleExpand} activeOpacity={0.8} style={styles.medHeader}>
         <TouchableOpacity

@@ -1,39 +1,17 @@
 import { Router } from 'express';
-import { refillsService } from './refills.service';
+import { refillsController } from './refills.controller';
 import { authenticate } from '../../middleware/authenticate';
-import { sendSuccess } from '../../lib/response';
 import { validate } from '../../middleware/validate';
 import { z } from 'zod';
 
 const router = Router();
 router.use(authenticate);
 
-router.get('/', async (req, res, next) => {
-  try {
-    const result = await refillsService.getAll(req.user!.userId);
-    sendSuccess(res, result);
-  } catch (err) {
-    next(err);
-  }
-});
+router.get('/', refillsController.getAll.bind(refillsController));
 
-router.get('/:medicationId', async (req, res, next) => {
-  try {
-    const result = await refillsService.getByMedication(req.user!.userId, req.params.medicationId);
-    sendSuccess(res, result);
-  } catch (err) {
-    next(err);
-  }
-});
+router.get('/:medicationId', refillsController.getByMedication.bind(refillsController));
 
-router.post('/:medicationId/acknowledge', async (req, res, next) => {
-  try {
-    await refillsService.acknowledge(req.user!.userId, req.params.medicationId);
-    sendSuccess(res, { message: 'Refill warning acknowledged' });
-  } catch (err) {
-    next(err);
-  }
-});
+router.post('/:medicationId/acknowledge', refillsController.acknowledge.bind(refillsController));
 
 router.post(
   '/:medicationId/inventory',
@@ -44,18 +22,7 @@ router.post(
       note: z.string().optional(),
     }),
   ),
-  async (req, res, next) => {
-    try {
-      const result = await refillsService.addInventory(
-        req.user!.userId,
-        req.params.medicationId,
-        req.body as { quantity: number; type?: string; note?: string },
-      );
-      sendSuccess(res, result);
-    } catch (err) {
-      next(err);
-    }
-  },
+  refillsController.addInventory.bind(refillsController),
 );
 
 export default router;

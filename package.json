@@ -9,17 +9,17 @@
     "packages/shared"
   ],
   "scripts": {
-    "dev:server": "yarn workspace @mediloop/server dev",
-    "dev:mobile": "yarn workspace @mediloop/mobile start",
-    "dev:admin": "yarn workspace @mediloop/admin dev",
-    "build:server": "yarn workspace @mediloop/server build",
-    "test:server": "yarn workspace @mediloop/server test",
-    "test:mobile": "yarn workspace @mediloop/mobile test",
-    "db:migrate": "yarn workspace @mediloop/server db:migrate",
-    "db:seed": "yarn workspace @mediloop/server db:seed",
-    "db:reset": "yarn workspace @mediloop/server db:reset",
-    "lint": "yarn workspaces run lint",
-    "type-check": "yarn workspaces run type-check"
+    "dev:server": "npm run dev --workspace=apps/server",
+    "dev:mobile": "npm run start --workspace=apps/mobile",
+    "dev:admin": "npm run dev --workspace=apps/admin",
+    "build:server": "npm run build --workspace=apps/server",
+    "test:server": "npm run test --workspace=apps/server",
+    "test:mobile": "npm run test --workspace=apps/mobile",
+    "db:migrate": "npm run db:migrate --workspace=apps/server",
+    "db:seed": "npm run db:seed --workspace=apps/server",
+    "db:reset": "npm run db:reset --workspace=apps/server",
+    "lint": "npm run lint --workspaces --if-present",
+    "type-check": "npm run type-check --workspaces --if-present"
   },
   "devDependencies": {
     "prettier": "^3.2.5"

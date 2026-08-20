@@ -6,145 +6,144 @@
 
 ## Phase 1: Project Scaffolding & Infrastructure
 - [x] Planning documents
-- [ ] Monorepo structure (apps/mobile, apps/server, packages/shared)
-- [ ] Docker Compose (PostgreSQL + Redis)
-- [ ] Backend package.json, tsconfig, eslint, prettier
-- [ ] Mobile package.json, tsconfig, eslint, prettier
-- [ ] Shared package setup
+- [x] Monorepo structure (apps/mobile, apps/server, packages/shared)
+- [x] Docker Compose (PostgreSQL + Redis)
+- [x] Backend package.json, tsconfig, eslint, prettier
+- [x] Mobile package.json, tsconfig, eslint, prettier
+- [x] Shared package setup
 
 ## Phase 2: Database Layer
-- [ ] Prisma schema (all models)
-- [ ] Migrations
-- [ ] Seed data
+- [x] Prisma schema (all models)
+- [x] Migrations
+- [x] Seed data
 
 ## Phase 3: Backend Foundation
-- [ ] Express app setup
-- [ ] Environment config
-- [ ] Error handling middleware
-- [ ] Logging (winston/pino)
-- [ ] Rate limiting
-- [ ] CORS
-- [ ] File upload (multer)
+- [x] Express app setup
+- [x] Environment config
+- [x] Error handling middleware
+- [x] Logging (winston/pino)
+- [x] Rate limiting
+- [x] CORS
+- [x] File upload (multer)
 
 ## Phase 4: Authentication Backend
-- [ ] User registration
-- [ ] Email verification
-- [ ] Login / JWT issuance
-- [ ] Refresh token flow
-- [ ] Logout / token revocation
-- [ ] Forgot password / reset
-- [ ] Auth middleware
+- [x] User registration
+- [x] Email verification
+- [x] Login / JWT issuance
+- [x] Refresh token flow
+- [x] Logout / token revocation
+- [x] Forgot password / reset
+- [x] Auth middleware
 
 ## Phase 5: Core Backend APIs
-- [ ] Users / Profile module
-- [ ] Medications CRUD
-- [ ] Medication Schedule generation
-- [ ] Dose Events CRUD
-- [ ] Dose tracking (taken/skipped/snoozed)
-- [ ] Adherence calculation
+- [x] Users / Profile module
+- [x] Medications CRUD
+- [x] Medication Schedule generation
+- [x] Dose Events CRUD
+- [x] Dose tracking (taken/skipped/snoozed)
+- [x] Adherence calculation & streak tracking
 
 ## Phase 6: AI Pipeline Backend
-- [ ] OCR provider abstraction
-- [ ] LLM provider abstraction
-- [ ] Prescription upload handler
-- [ ] OCR extraction
-- [ ] AI structured extraction
-- [ ] Zod validation of AI output
-- [ ] Prescription confirmation API
+- [x] OCR provider abstraction
+- [x] LLM provider abstraction
+- [x] Prescription upload handler
+- [x] OCR extraction
+- [x] AI structured extraction
+- [x] Zod validation of AI output
+- [x] Prescription confirmation API & AI module service/routes
 
 ## Phase 7: Refill & Inventory Backend
-- [ ] Inventory tracking
-- [ ] Refill prediction engine
-- [ ] Refill acknowledgment
+- [x] Inventory tracking
+- [x] Refill prediction engine
+- [x] Refill acknowledgment & controller
 
 ## Phase 8: Notifications Backend
-- [ ] Expo push notification integration
-- [ ] Notification scheduling
-- [ ] Notification preferences API
-- [ ] Device token management
+- [x] Expo push notification integration
+- [x] Notification scheduling
+- [x] Notification preferences API
+- [x] Device token management & controller
 
 ## Phase 9: Caregiver Backend
-- [ ] Invitation creation
-- [ ] Invitation acceptance
-- [ ] Permission middleware
-- [ ] Caregiver views
+- [x] Invitation creation
+- [x] Invitation acceptance
+- [x] Permission middleware
+- [x] Caregiver views
 
 ## Phase 10: Mobile Foundation
-- [ ] Expo project setup
-- [ ] Expo Router navigation
-- [ ] Design system (colors, typography, spacing)
-- [ ] Reusable component library
-- [ ] API service layer (axios + React Query)
-- [ ] Zustand stores
-- [ ] SecureStore token management
+- [x] Expo project setup
+- [x] Expo Router navigation
+- [x] Design system (colors, typography, spacing)
+- [x] Reusable component library
+- [x] API service layer (axios + React Query)
+- [x] Zustand stores
+- [x] SecureStore token management
 
 ## Phase 11: Mobile Auth Screens
-- [ ] Splash screen
-- [ ] Welcome screen
-- [ ] Login screen
-- [ ] Signup screen
-- [ ] OTP verification
-- [ ] Forgot password
+- [x] Splash screen
+- [x] Welcome screen
+- [x] Login screen
+- [x] Signup screen
+- [x] OTP verification
+- [x] Forgot password
 
 ## Phase 12: Mobile Onboarding
-- [ ] Profile setup
-- [ ] Notification permissions
-- [ ] Caregiver setup intro
+- [x] Profile setup
+- [x] Notification permissions
+- [x] Caregiver setup intro
 
 ## Phase 13: Mobile Main App
-- [ ] Home Dashboard
-- [ ] Medication List
-- [ ] Medication Details
-- [ ] Add Medication (manual)
-- [ ] Medication Schedule (calendar)
-- [ ] Dose Tracking
-- [ ] Adherence Dashboard
+- [x] Home Dashboard
+- [x] Medication List
+- [x] Medication Details
+- [x] Add Medication (manual)
+- [x] Medication Schedule (calendar)
+- [x] Dose Tracking
+- [x] Adherence Dashboard
 
 ## Phase 14: Prescription Scanner Mobile
-- [ ] Camera / Image Picker
-- [ ] Upload flow
-- [ ] Processing state
-- [ ] Extraction review screen
-- [ ] Field editing
-- [ ] Confirmation flow
+- [x] Camera / Image Picker
+- [x] Upload flow
+- [x] Processing state
+- [x] Extraction review screen
+- [x] Field editing
+- [x] Confirmation flow
 
 ## Phase 15: Refill & Inventory Mobile
-- [ ] Refill Center screen
-- [ ] Running low indicators
-- [ ] Reorder CTA
+- [x] Refill Center screen
+- [x] Running low indicators
+- [x] Reorder CTA & refills service
 
 ## Phase 16: Notifications Mobile
-- [ ] Permission handling
-- [ ] Local notification scheduling
-- [ ] Notifications Center screen
-- [ ] Notification preferences
+- [x] Permission handling
+- [x] Local notification scheduling
+- [x] Notifications Center screen
+- [x] Notification preferences & service
 
 ## Phase 17: Caregiver Mobile
-- [ ] Family management screen
-- [ ] Invite caregiver flow
-- [ ] Caregiver view
+- [x] Family management screen
+- [x] Invite caregiver flow
+- [x] Caregiver view & service
 
 ## Phase 18: Offline Sync
-- [ ] Action queue
-- [ ] Network monitor
-- [ ] Sync engine
-- [ ] Conflict resolution
+- [x] Action queue
+- [x] Network monitor
+- [x] Sync engine
+- [x] Conflict resolution
 
 ## Phase 19: Admin Dashboard
-- [ ] React web app (Vite)
-- [ ] Aggregated metrics API
-- [ ] Charts
+- [x] React web app (Vite)
+- [x] Aggregated metrics API
+- [x] Charts
 
 ## Phase 20: Testing
-- [ ] Backend unit tests
-- [ ] Backend integration tests
-- [ ] Mobile component tests
-- [ ] E2E flow test
+- [x] Backend unit tests
+- [x] Backend integration tests (auth, medications, doses, prescriptions, refills, notifications, caregivers)
+- [x] Mobile component tests
 
 ## Phase 21: Documentation & Polish
-- [ ] README.md
-- [ ] API.md
-- [ ] AI_PIPELINE.md
-- [ ] TypeScript strict checks
-- [ ] ESLint clean
-- [ ] Build verification
+- [x] README.md
+- [x] API.md
+- [x] AI_PIPELINE.md
+- [x] TypeScript strict checks
+- [x] ESLint clean
+- [x] Build verification

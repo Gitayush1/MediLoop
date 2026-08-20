@@ -110,7 +110,7 @@ export default function RefillsScreen() {
           }
           renderItem={({ item }) => (
             <Card
-              style={[styles.card, item.urgency === 'CRITICAL' && styles.cardCritical]}
+              style={[styles.card, item.urgency === 'CRITICAL' && styles.cardCritical] as any}
               onPress={() => router.push(`/medications/${item.medication.id}`)}
             >
               <View style={styles.cardHeader}>

@@ -65,7 +65,6 @@ export const Input = forwardRef<TextInput, InputProps>(
             placeholderTextColor={Colors.textTertiary}
             accessibilityLabel={label}
             accessibilityHint={hint}
-            accessibilityInvalid={hasError}
             {...props}
           />
 

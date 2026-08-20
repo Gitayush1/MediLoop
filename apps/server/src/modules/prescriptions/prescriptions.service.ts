@@ -5,7 +5,8 @@ import { NotFoundError, AuthorizationError, BadRequestError, AppError } from '..
 import { ocrProvider } from '../ai/providers/ocr.provider';
 import { llmProvider } from '../ai/providers/llm.provider';
 import { logger } from '../../lib/logger';
-import type { PrescriptionExtraction } from '@mediloop/shared';
+import type { Prisma } from '@prisma/client';
+import type { PrescriptionExtraction, ExtractedMedicine } from '@mediloop/shared';
 
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -110,7 +111,7 @@ export class PrescriptionsService {
       const extraction = await llmProvider.extractPrescription(ocrText);
 
       // 4. Store extraction results
-      await prisma.$transaction(async (tx) => {
+      await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
         // Update prescription
         await tx.prescription.update({
           where: { id: prescriptionId },
@@ -127,7 +128,7 @@ export class PrescriptionsService {
 
         // Store extracted medicines
         await tx.prescriptionMedicine.createMany({
-          data: extraction.medicines.map((med) => ({
+          data: extraction.medicines.map((med: ExtractedMedicine) => ({
             prescriptionId,
             name: med.name,
             dosage: med.dosage,
@@ -256,7 +257,7 @@ export class PrescriptionsService {
     });
   }
 
-  async explain(userId: string, data: { medicationName: string; dosage?: string; frequency?: string; instructions?: string; duration?: string }) {
+  async explain(_userId: string, data: { medicationName: string; dosage?: string; frequency?: string; instructions?: string; duration?: string }) {
     // Safety check: user must own a medication with this name
     const explanation = await llmProvider.explainMedication({
       medicationName: data.medicationName,

@@ -47,28 +47,28 @@ export class DosesService {
     // Auto-mark scheduled doses as missed if past by more than 1 hour
     const missedThreshold = new Date(now.getTime() - 60 * 60 * 1000);
     const toMark = doses.filter(
-      (d) => d.status === 'SCHEDULED' && d.scheduledAt < missedThreshold,
+      (d: { status: string; scheduledAt: Date }) => d.status === 'SCHEDULED' && d.scheduledAt < missedThreshold,
     );
 
     if (toMark.length > 0) {
       await prisma.doseEvent.updateMany({
-        where: { id: { in: toMark.map((d) => d.id) } },
+        where: { id: { in: toMark.map((d: { id: string }) => d.id) } },
         data: { status: 'MISSED' },
       });
-      toMark.forEach((d) => {
+      toMark.forEach((d: { status: string }) => {
         d.status = 'MISSED';
       });
     }
 
-    const upcoming = doses.filter((d) => d.status === 'SCHEDULED' || d.status === 'SNOOZED');
-    const past = doses.filter((d) => d.status !== 'SCHEDULED' && d.status !== 'SNOOZED');
+    const upcoming = doses.filter((d: { status: string }) => d.status === 'SCHEDULED' || d.status === 'SNOOZED');
+    const past = doses.filter((d: { status: string }) => d.status !== 'SCHEDULED' && d.status !== 'SNOOZED');
 
     return {
       upcoming,
       past,
       total: doses.length,
-      takenCount: doses.filter((d) => d.status === 'TAKEN').length,
-      missedCount: doses.filter((d) => d.status === 'MISSED').length,
+      takenCount: doses.filter((d: { status: string }) => d.status === 'TAKEN').length,
+      missedCount: doses.filter((d: { status: string }) => d.status === 'MISSED').length,
     };
   }
 
@@ -185,7 +185,7 @@ export class DosesService {
     });
 
     const counts = events.reduce(
-      (acc, e) => {
+      (acc: Record<string, number>, e: { status: string; _count: { status: number } }) => {
         acc[e.status] = e._count.status;
         return acc;
       },

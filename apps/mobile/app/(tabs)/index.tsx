@@ -123,7 +123,7 @@ export default function HomeScreen() {
             {todayDoses.upcoming.length > 0 && (
               <>
                 <Text style={styles.subSection}>Upcoming</Text>
-                {todayDoses.upcoming.map((dose) => (
+                {todayDoses.upcoming.map((dose: any) => (
                   <DoseCard
                     key={dose.id}
                     dose={dose}
@@ -138,7 +138,7 @@ export default function HomeScreen() {
             {todayDoses.past.length > 0 && (
               <>
                 <Text style={styles.subSection}>Earlier today</Text>
-                {todayDoses.past.map((dose) => (
+                {todayDoses.past.map((dose: any) => (
                   <DoseCard key={dose.id} dose={dose} />
                 ))}
               </>
@@ -232,7 +232,7 @@ function RefillAlert({ refill, onReorder }: { refill: {
 }; onReorder: () => void }) {
   const isCritical = refill.urgency === 'CRITICAL' || refill.urgency === 'HIGH';
   return (
-    <Card style={[styles.refillCard, isCritical && styles.refillCardCritical]}>
+    <Card style={[styles.refillCard, isCritical && styles.refillCardCritical] as any}>
       <View style={styles.refillRow}>
         <View style={styles.refillInfo}>
           <Text style={styles.refillName}>{refill.medication.name}</Text>
