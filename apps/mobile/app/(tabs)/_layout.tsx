@@ -91,10 +91,15 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     paddingBottom: Platform.OS === 'ios' ? 28 : 8,
     elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
+    ...Platform.select({
+      web: { boxShadow: '0px -2px 8px rgba(0,0,0,0.06)' },
+      default: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -2 },
+        shadowOpacity: 0.06,
+        shadowRadius: 8,
+      },
+    }),
   },
   tabIcon: {
     alignItems: 'center',
@@ -126,11 +131,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 4,
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
     elevation: 6,
+    ...Platform.select({
+      web: { boxShadow: `0px 4px 8px ${Colors.primary}66` },
+      default: {
+        shadowColor: Colors.primary,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.4,
+        shadowRadius: 8,
+      },
+    }),
   },
   scanEmoji: { fontSize: 24 },
   badge: {

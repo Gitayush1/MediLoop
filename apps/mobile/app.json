@@ -11,7 +11,9 @@
       "resizeMode": "contain",
       "backgroundColor": "#4F46E5"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "app.mediloop.ios",
@@ -34,9 +36,15 @@
         "android.permission.POST_NOTIFICATIONS"
       ]
     },
+    "platforms": [
+      "ios",
+      "android",
+      "web"
+    ],
     "web": {
       "favicon": "./assets/favicon.png",
-      "bundler": "metro"
+      "bundler": "metro",
+      "vapidPublicKey": "YOUR_VAPID_PUBLIC_KEY_HERE"
     },
     "plugins": [
       "expo-router",
@@ -60,16 +68,15 @@
         {
           "photosPermission": "MediLoop needs access to your photos to upload prescriptions."
         }
-      ]
+      ],
+      "expo-font"
     ],
     "scheme": "mediloop",
     "extra": {
       "router": {
         "origin": false
       },
-      "eas": {
-        "projectId": "mediloop-project-id"
-      }
+      "apiBaseUrl": "http://10.22.2.220:3000/api/v1"
     }
   }
 }

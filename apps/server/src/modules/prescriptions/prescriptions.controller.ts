@@ -39,7 +39,7 @@ export class PrescriptionsController {
       const result = await prescriptionsService.confirmMedicines(
         req.user!.userId,
         req.params.id,
-        req.body as Parameters<typeof prescriptionsService.confirmMedicines>[2],
+        req.body.confirmations as Parameters<typeof prescriptionsService.confirmMedicines>[2],
       );
       sendSuccess(res, result);
     } catch (err) {

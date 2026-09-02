@@ -24,8 +24,8 @@ async function main() {
       role: 'PATIENT',
       profile: {
         create: {
-          firstName: 'Ayush',
-          lastName: 'Sharma',
+          firstName: 'Sachin',
+          lastName: 'Sansare',
           dateOfBirth: new Date('1990-05-15'),
           phone: '+91 98765 43210',
           timezone: 'Asia/Kolkata',
@@ -114,8 +114,6 @@ async function main() {
   // ─────────────────────────────────────────────────────────────
   const today = new Date();
   const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
-  const sevenDaysAhead = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
-  const sixtyDaysAhead = new Date(today.getTime() + 60 * 24 * 60 * 60 * 1000);
 
   // Medication 1: Vitamin D (long-term, running low)
   const vitaminD = await prisma.medication.create({
@@ -198,7 +196,7 @@ async function main() {
   // ─────────────────────────────────────────────────────────────
   // Medication Schedules
   // ─────────────────────────────────────────────────────────────
-  const vitaminDSchedule = await prisma.medicationSchedule.create({
+  await prisma.medicationSchedule.create({
     data: {
       medicationId: vitaminD.id,
       timeOfDay: '08:00',

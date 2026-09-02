@@ -9,7 +9,7 @@ import { prescriptionExtractionSchema } from '@mediloop/shared';
 import type { PrescriptionExtraction } from '@mediloop/shared';
 
 export interface LLMProvider {
-  extractPrescription(ocrText: string): Promise<PrescriptionExtraction>;
+  extractPrescription(ocrText: string, fileBuffer?: Buffer, mimeType?: string): Promise<PrescriptionExtraction>;
   explainMedication(context: MedicationExplanationContext): Promise<string>;
 }
 
@@ -83,43 +83,53 @@ class MockLLMProvider implements LLMProvider {
 
     // Parse the mock OCR text in a deterministic way
     const mockResult: PrescriptionExtraction = {
-      doctorName: 'Dr. Priya Sharma',
-      patientName: 'John Doe',
-      prescriptionDate: '2026-08-20',
-      hospitalClinic: undefined,
+      doctorName: 'Dr. Rajesh Dental Clinic',
+      patientName: 'Mr. Sachin Sansare',
+      prescriptionDate: '2026-09-02',
+      hospitalClinic: 'Care Dental & Medical Center',
       medicines: [
         {
-          name: 'Amoxicillin',
-          dosage: '500mg',
+          name: 'Augmentin',
+          dosage: '625mg',
           form: 'Tablet',
-          frequency: 'Twice daily',
+          frequency: 'Twice daily (1-0-1)',
           duration: '5 days',
           instructions: 'After food',
           confidence: 0.95,
           requiresConfirmation: false,
         },
         {
-          name: 'Paracetamol',
-          dosage: '650mg',
+          name: 'Enzoflam',
+          dosage: undefined,
           form: 'Tablet',
-          frequency: 'Three times daily',
-          duration: '3 days',
-          instructions: 'As needed (SOS)',
-          confidence: 0.9,
+          frequency: 'Twice daily (1-0-1)',
+          duration: '5 days',
+          instructions: 'After food',
+          confidence: 0.92,
           requiresConfirmation: false,
         },
         {
-          name: 'Cetirizine Syrup',
-          dosage: '5mg/5ml',
-          form: 'Syrup',
-          frequency: 'Once daily',
+          name: 'Pan D',
+          dosage: '40mg',
+          form: 'Tablet',
+          frequency: 'Once daily (1-0-0)',
+          duration: '5 days',
+          instructions: 'Empty stomach in morning',
+          confidence: 0.94,
+          requiresConfirmation: false,
+        },
+        {
+          name: 'Hexigel Gum Paint',
+          dosage: undefined,
+          form: 'Gel',
+          frequency: 'Twice daily (1-0-1)',
           duration: '7 days',
-          instructions: 'At bedtime',
-          confidence: 0.88,
+          instructions: 'Massage gently on gums',
+          confidence: 0.89,
           requiresConfirmation: false,
         },
       ],
-      overallConfidence: 0.91,
+      overallConfidence: 0.93,
       rawText: ocrText,
     };
 
@@ -235,6 +245,138 @@ class OpenAILLMProvider implements LLMProvider {
 }
 
 // ─────────────────────────────────────────────────────────────
+// Gemini LLM Provider (Free tier available)
+// ─────────────────────────────────────────────────────────────
+
+class GeminiLLMProvider implements LLMProvider {
+  private apiKey: string;
+  private model: string;
+  private maxRetries: number;
+
+  constructor(apiKey: string, model: string, maxRetries: number) {
+    this.apiKey = apiKey;
+    this.model = model;
+    this.maxRetries = maxRetries;
+  }
+
+  async extractPrescription(
+    ocrText: string,
+    fileBuffer?: Buffer,
+    mimeType?: string,
+  ): Promise<PrescriptionExtraction> {
+    let lastError: Error | null = null;
+
+    for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
+      try {
+        // Build the parts array — prefer vision if we have an image
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const parts: any[] = [];
+
+        if (fileBuffer && mimeType) {
+          parts.push({
+            inlineData: {
+              mimeType,
+              data: fileBuffer.toString('base64'),
+            },
+          });
+          parts.push({
+            text: `You are a medical prescription parsing assistant. Extract all medicines and details from this prescription image and return ONLY valid JSON (no markdown, no code blocks) matching this exact schema:
+${EXTRACTION_SYSTEM_PROMPT}
+
+If any text from OCR is also available, use it to verify:
+${ocrText || '(no OCR text available)'}`,
+          });
+        } else {
+          parts.push({
+            text: `${EXTRACTION_SYSTEM_PROMPT}
+
+Parse the following prescription OCR text and return ONLY valid JSON:
+
+${ocrText}`,
+          });
+        }
+
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${this.model}:generateContent?key=${this.apiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts }],
+              generationConfig: {
+                temperature: 0.1,
+                responseMimeType: 'application/json',
+              },
+            }),
+          },
+        );
+
+        if (!response.ok) {
+          const error = await response.text();
+          throw new Error(`Gemini API error: ${response.status} - ${error}`);
+        }
+
+        const data = (await response.json()) as {
+          candidates: Array<{ content: { parts: Array<{ text: string }> } }>;
+        };
+
+        const content = data.candidates[0]?.content?.parts[0]?.text;
+        if (!content) throw new Error('Empty response from Gemini');
+
+        // Strip any accidental markdown fences
+        const cleaned = content.replace(/```json\n?|```/g, '').trim();
+        const parsed = JSON.parse(cleaned) as unknown;
+
+        const validated = prescriptionExtractionSchema.parse(parsed);
+        return { ...validated, rawText: ocrText };
+      } catch (err) {
+        lastError = err as Error;
+        logger.warn({ attempt, err }, 'Gemini extraction attempt failed');
+        if (attempt < this.maxRetries) {
+          await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
+        }
+      }
+    }
+
+    logger.error({ err: lastError }, 'All Gemini extraction attempts failed');
+    throw new AppError('AI_EXTRACTION_FAILED', 'Failed to extract prescription data. Please enter medications manually.', 422);
+  }
+
+  async explainMedication(context: MedicationExplanationContext): Promise<string> {
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${this.model}:generateContent?key=${this.apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                {
+                  text: `${EXPLANATION_SYSTEM_PROMPT}
+
+Explain this medication in simple terms: ${JSON.stringify(context)}`,
+                },
+              ],
+            },
+          ],
+          generationConfig: { temperature: 0.3, maxOutputTokens: 200 },
+        }),
+      },
+    );
+
+    if (!response.ok) {
+      throw new AppError('AI_EXTRACTION_FAILED', 'Failed to generate explanation', 500);
+    }
+
+    const data = (await response.json()) as {
+      candidates: Array<{ content: { parts: Array<{ text: string }> } }>;
+    };
+    return data.candidates[0]?.content?.parts[0]?.text ?? 'Unable to generate explanation at this time.';
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
 // Factory
 // ─────────────────────────────────────────────────────────────
 
@@ -248,6 +390,12 @@ export function createLLMProvider(): LLMProvider {
         return new MockLLMProvider();
       }
       return new OpenAILLMProvider(config.AI_API_KEY, config.AI_MODEL, config.AI_MAX_RETRIES);
+    case 'gemini':
+      if (!config.AI_API_KEY) {
+        logger.warn('AI_API_KEY not set for Gemini, falling back to mock LLM');
+        return new MockLLMProvider();
+      }
+      return new GeminiLLMProvider(config.AI_API_KEY, config.AI_MODEL, config.AI_MAX_RETRIES);
     default:
       logger.warn(`Unknown AI provider: ${config.AI_PROVIDER}, using mock`);
       return new MockLLMProvider();

@@ -1,4 +1,5 @@
 import { apiClient } from '../lib/api';
+import { Platform } from 'react-native';
 import type { PrescriptionExtraction } from '@mediloop/shared';
 
 export interface Prescription {
@@ -44,14 +45,25 @@ export interface ConfirmMedicineInput {
 export const prescriptionsService = {
   async upload(uri: string, fileName: string, mimeType: string) {
     const formData = new FormData();
-    formData.append('file', {
-      uri,
-      name: fileName,
-      type: mimeType,
-    } as unknown as Blob);
+
+    if (Platform.OS === 'web') {
+      // On web, uri is a blob: or data: URL — fetch it to get a real Blob
+      const response = await fetch(uri);
+      const blob = await response.blob();
+      formData.append('file', blob, fileName);
+    } else {
+      // On native, React Native's fetch layer handles { uri, name, type } objects
+      formData.append('file', {
+        uri,
+        name: fileName,
+        type: mimeType,
+      } as unknown as Blob);
+    }
 
     const res = await apiClient.post<{ data: Prescription }>('/prescriptions/upload', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
+      // Let the browser/RN set Content-Type with the multipart boundary automatically.
+      // Manually setting it on web strips the boundary and breaks the request.
+      headers: Platform.OS === 'web' ? {} : { 'Content-Type': 'multipart/form-data' },
       timeout: 60000,
     });
     return res.data.data;

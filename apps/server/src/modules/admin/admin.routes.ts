@@ -96,20 +96,20 @@ router.get('/daily-stats', async (_req, res, next) => {
 
     // New user registrations per day
     const usersByDay = await prisma.$queryRaw<Array<{ date: string; count: bigint }>>`
-      SELECT DATE(created_at) as date, COUNT(*) as count
+      SELECT DATE("createdAt") as date, COUNT(*) as count
       FROM users
-      WHERE created_at >= ${thirtyDaysAgo} AND deleted_at IS NULL
-      GROUP BY DATE(created_at)
+      WHERE "createdAt" >= ${thirtyDaysAgo} AND "deletedAt" IS NULL
+      GROUP BY DATE("createdAt")
       ORDER BY date ASC
     `;
 
     // Dose events per day
     const dosesByDay = await prisma.$queryRaw<Array<{ date: string; status: string; count: bigint }>>`
-      SELECT DATE(scheduled_at) as date, status, COUNT(*) as count
+      SELECT DATE("scheduledAt") as date, status, COUNT(*) as count
       FROM dose_events
-      WHERE scheduled_at >= ${thirtyDaysAgo}
+      WHERE "scheduledAt" >= ${thirtyDaysAgo}
         AND status IN ('TAKEN', 'MISSED')
-      GROUP BY DATE(scheduled_at), status
+      GROUP BY DATE("scheduledAt"), status
       ORDER BY date ASC
     `;
 

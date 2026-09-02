@@ -35,8 +35,8 @@ services:
 
   server:
     build:
-      context: ./apps/server
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./apps/server/Dockerfile
     container_name: mediloop_server
     restart: unless-stopped
     depends_on:

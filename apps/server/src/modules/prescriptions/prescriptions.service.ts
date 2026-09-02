@@ -108,7 +108,7 @@ export class PrescriptionsService {
 
       // 3. AI extraction
       logger.info({ prescriptionId }, 'Starting AI extraction');
-      const extraction = await llmProvider.extractPrescription(ocrText);
+      const extraction = await llmProvider.extractPrescription(ocrText, fileBuffer, prescription.mimeType ?? 'image/jpeg');
 
       // 4. Store extraction results
       await prisma.$transaction(async (tx: Prisma.TransactionClient) => {

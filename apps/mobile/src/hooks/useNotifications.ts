@@ -47,6 +47,12 @@ export function useNotificationSetup(userId?: string) {
 }
 
 async function registerForPushNotifications(): Promise<string | null> {
+  // Push notifications are not supported on web without VAPID config
+  if (Platform.OS === 'web') {
+    logger.warn('Push notifications not supported on web in this build');
+    return null;
+  }
+
   if (!Device.isDevice) {
     logger.warn('Push notifications not available on simulator');
     return null;
@@ -79,8 +85,13 @@ async function registerForPushNotifications(): Promise<string | null> {
     });
   }
 
-  const token = await Notifications.getExpoPushTokenAsync();
-  return token.data;
+  try {
+    const token = await Notifications.getExpoPushTokenAsync();
+    return token.data;
+  } catch (err) {
+    logger.warn('Could not get push token (normal in dev/Expo Go without projectId)');
+    return null;
+  }
 }
 
 async function registerTokenWithServer(token: string, userId: string): Promise<void> {

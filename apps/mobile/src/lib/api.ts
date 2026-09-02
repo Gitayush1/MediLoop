@@ -1,10 +1,12 @@
 import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'axios';
-import * as SecureStore from 'expo-secure-store';
+import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 
 // ─────────────────────────────────────────────────────────────
 // API Base URL (configure in app.json extra or env)
 // ─────────────────────────────────────────────────────────────
+import * as SecureStore from 'expo-secure-store';
+
 const API_BASE_URL =
   (Constants.expoConfig?.extra?.apiBaseUrl as string | undefined) ??
   'http://localhost:3000/api/v1';
@@ -13,25 +15,69 @@ const SECURE_KEY_ACCESS = 'mediloop_access_token';
 const SECURE_KEY_REFRESH = 'mediloop_refresh_token';
 
 // ─────────────────────────────────────────────────────────────
+// Platform-aware storage
+// expo-secure-store only works on native (iOS/Android).
+// On web we fall back to localStorage.
+// ─────────────────────────────────────────────────────────────
+const storage = {
+  async getItem(key: string): Promise<string | null> {
+    if (Platform.OS === 'web') {
+      try {
+        return localStorage.getItem(key);
+      } catch {
+        return null;
+      }
+    }
+    try {
+      return await SecureStore.getItemAsync(key);
+    } catch {
+      return null;
+    }
+  },
+  async setItem(key: string, value: string): Promise<void> {
+    if (Platform.OS === 'web') {
+      try {
+        localStorage.setItem(key, value);
+      } catch {}
+      return;
+    }
+    try {
+      await SecureStore.setItemAsync(key, value);
+    } catch {}
+  },
+  async removeItem(key: string): Promise<void> {
+    if (Platform.OS === 'web') {
+      try {
+        localStorage.removeItem(key);
+      } catch {}
+      return;
+    }
+    try {
+      await SecureStore.deleteItemAsync(key);
+    } catch {}
+  },
+};
+
+// ─────────────────────────────────────────────────────────────
 // Token storage helpers
 // ─────────────────────────────────────────────────────────────
 export const TokenStorage = {
   async getAccessToken(): Promise<string | null> {
-    return SecureStore.getItemAsync(SECURE_KEY_ACCESS);
+    return storage.getItem(SECURE_KEY_ACCESS);
   },
   async getRefreshToken(): Promise<string | null> {
-    return SecureStore.getItemAsync(SECURE_KEY_REFRESH);
+    return storage.getItem(SECURE_KEY_REFRESH);
   },
   async setTokens(access: string, refresh: string): Promise<void> {
     await Promise.all([
-      SecureStore.setItemAsync(SECURE_KEY_ACCESS, access),
-      SecureStore.setItemAsync(SECURE_KEY_REFRESH, refresh),
+      storage.setItem(SECURE_KEY_ACCESS, access),
+      storage.setItem(SECURE_KEY_REFRESH, refresh),
     ]);
   },
   async clearTokens(): Promise<void> {
     await Promise.all([
-      SecureStore.deleteItemAsync(SECURE_KEY_ACCESS),
-      SecureStore.deleteItemAsync(SECURE_KEY_REFRESH),
+      storage.removeItem(SECURE_KEY_ACCESS),
+      storage.removeItem(SECURE_KEY_REFRESH),
     ]);
   },
 };

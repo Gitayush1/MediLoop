@@ -13,12 +13,22 @@ if (!fs.existsSync(uploadsDir)) {
 }
 
 async function bootstrap(): Promise<void> {
-  // Connect to Redis
-  await redis.connect();
+  // Connect to Redis if configured and wait
+  if (redis.status === 'wait') {
+    try {
+      await redis.connect();
+    } catch {
+      logger.warn('Redis unavailable, continuing in fallback mode');
+    }
+  }
 
   // Verify database connection
-  await prisma.$connect();
-  logger.info('Database connected');
+  try {
+    await prisma.$connect();
+    logger.info('Database connected');
+  } catch (err) {
+    logger.error({ err }, 'Failed to connect to Database');
+  }
 
   // Start server
   const server = app.listen(config.PORT, () => {
@@ -28,7 +38,7 @@ async function bootstrap(): Promise<void> {
         env: config.NODE_ENV,
         version: '1.0.0',
       },
-      `🚀 MediLoop API server started`,
+      `🚀 MediLoop API server started on http://localhost:${config.PORT}`,
     );
   });
 
@@ -36,8 +46,14 @@ async function bootstrap(): Promise<void> {
   const shutdown = async (signal: string): Promise<void> => {
     logger.info({ signal }, 'Shutting down gracefully...');
     server.close(async () => {
-      await prisma.$disconnect();
-      await redis.quit();
+      try {
+        await prisma.$disconnect();
+        if (redis.status === 'ready') {
+          await redis.quit();
+        }
+      } catch {
+        // Ignore disconnect errors on shutdown
+      }
       logger.info('Server closed');
       process.exit(0);
     });
