@@ -89,6 +89,69 @@ class GoogleVisionOCRProvider implements OCRProvider {
 }
 
 // ─────────────────────────────────────────────────────────────
+// Groq Vision OCR Provider
+// ─────────────────────────────────────────────────────────────
+
+class GroqOCRProvider implements OCRProvider {
+  private apiKey: string;
+
+  constructor(apiKey: string) {
+    this.apiKey = apiKey;
+  }
+
+  async extractText(fileBuffer: Buffer, mimeType: string): Promise<string> {
+    const base64 = fileBuffer.toString('base64');
+    const model = config.AI_MODEL || 'groq/compound';
+
+    try {
+      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${this.apiKey}`,
+        },
+        body: JSON.stringify({
+          model,
+          messages: [
+            {
+              role: 'user',
+              content: [
+                {
+                  type: 'text',
+                  text: 'Transcribe all visible text from this prescription image accurately into plain text. Include doctor details, patient details, medicine names, dosages, frequencies, and instructions. Output ONLY the transcribed text.',
+                },
+                {
+                  type: 'image_url',
+                  image_url: {
+                    url: `data:${mimeType};base64,${base64}`,
+                  },
+                },
+              ],
+            },
+          ],
+          temperature: 0.1,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.text();
+        logger.error({ error }, 'Groq Vision OCR failed');
+        throw new AppError('OCR_FAILED', `Groq OCR failed: ${response.status}`, 500);
+      }
+
+      const data = (await response.json()) as {
+        choices: Array<{ message: { content: string } }>;
+      };
+
+      return data.choices[0]?.message?.content?.trim() ?? '';
+    } catch (err) {
+      logger.error({ err }, 'Groq OCR extraction exception');
+      throw err instanceof AppError ? err : new AppError('OCR_FAILED', 'Groq OCR extraction failed', 500);
+    }
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
 // Factory
 // ─────────────────────────────────────────────────────────────
 
@@ -102,6 +165,14 @@ export function createOCRProvider(): OCRProvider {
         return new MockOCRProvider();
       }
       return new GoogleVisionOCRProvider(config.OCR_API_KEY);
+    case 'groq': {
+      const groqKey = config.GROQ_API_KEY || config.AI_API_KEY || config.OCR_API_KEY;
+      if (!groqKey) {
+        logger.warn('GROQ_API_KEY / AI_API_KEY not set, falling back to mock OCR');
+        return new MockOCRProvider();
+      }
+      return new GroqOCRProvider(groqKey);
+    }
     default:
       logger.warn(`Unknown OCR provider: ${config.OCR_PROVIDER}, using mock`);
       return new MockOCRProvider();
@@ -109,3 +180,4 @@ export function createOCRProvider(): OCRProvider {
 }
 
 export const ocrProvider = createOCRProvider();
+

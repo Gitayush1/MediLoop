@@ -33,11 +33,21 @@ export class AIService {
     });
 
     try {
+      // Fetch file buffer for OCR & Vision LLM
+      let fileBuffer: Buffer | undefined;
+      if (prescription.fileUrl) {
+        fileBuffer = await this.fetchFileBuffer(prescription.fileUrl);
+      }
+
       // ── Step 1: OCR ──────────────────────────────────────────
       let ocrText = prescription.ocrText;
-      if (!ocrText) {
-        const fileBuffer = await this.fetchFileBuffer(prescription.fileUrl!);
-        ocrText = await ocrProvider.extractText(fileBuffer, prescription.mimeType ?? 'image/jpeg');
+      if (!ocrText && fileBuffer) {
+        try {
+          ocrText = await ocrProvider.extractText(fileBuffer, prescription.mimeType ?? 'image/jpeg');
+        } catch (ocrErr) {
+          logger.warn({ prescriptionId, ocrErr }, 'OCR step failed or timed out, continuing to LLM vision parsing');
+          ocrText = '';
+        }
 
         await prisma.prescription.update({
           where: { id: prescriptionId },
@@ -46,7 +56,11 @@ export class AIService {
       }
 
       // ── Step 2: LLM extraction ────────────────────────────────
-      const extraction = await llmProvider.extractPrescription(ocrText);
+      const extraction = await llmProvider.extractPrescription(
+        ocrText || '',
+        fileBuffer,
+        prescription.mimeType ?? 'image/jpeg',
+      );
 
       // ── Step 3: Store extracted medicines ─────────────────────
       // Delete previous extractions (re-process case)

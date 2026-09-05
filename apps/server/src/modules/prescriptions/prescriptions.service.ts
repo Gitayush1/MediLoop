@@ -93,22 +93,21 @@ export class PrescriptionsService {
 
       // 2. OCR extraction
       logger.info({ prescriptionId }, 'Starting OCR extraction');
-      let ocrText: string;
+      let ocrText = '';
 
       try {
         ocrText = await ocrProvider.extractText(fileBuffer, prescription.mimeType ?? 'image/jpeg');
       } catch (err) {
-        logger.error({ err, prescriptionId }, 'OCR failed');
-        throw new AppError('OCR_FAILED', 'Failed to extract text from the prescription image', 422);
-      }
-
-      if (!ocrText.trim()) {
-        throw new AppError('OCR_FAILED', 'No text could be extracted from the image. Please ensure the image is clear and well-lit.', 422);
+        logger.warn({ err, prescriptionId }, 'OCR extraction failed or timed out, continuing to LLM vision parsing');
       }
 
       // 3. AI extraction
       logger.info({ prescriptionId }, 'Starting AI extraction');
-      const extraction = await llmProvider.extractPrescription(ocrText, fileBuffer, prescription.mimeType ?? 'image/jpeg');
+      const extraction = await llmProvider.extractPrescription(
+        ocrText || '',
+        fileBuffer,
+        prescription.mimeType ?? 'image/jpeg',
+      );
 
       // 4. Store extraction results
       await prisma.$transaction(async (tx: Prisma.TransactionClient) => {

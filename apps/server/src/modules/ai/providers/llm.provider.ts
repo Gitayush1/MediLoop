@@ -377,6 +377,135 @@ Explain this medication in simple terms: ${JSON.stringify(context)}`,
 }
 
 // ─────────────────────────────────────────────────────────────
+// Groq LLM Provider
+// ─────────────────────────────────────────────────────────────
+
+class GroqLLMProvider implements LLMProvider {
+  private apiKey: string;
+  private model: string;
+  private maxRetries: number;
+
+  constructor(apiKey: string, model: string, maxRetries: number) {
+    this.apiKey = apiKey;
+    // Default to groq/compound
+    this.model = model || 'groq/compound';
+    this.maxRetries = maxRetries;
+  }
+
+  async extractPrescription(
+    ocrText: string,
+    fileBuffer?: Buffer,
+    mimeType?: string,
+  ): Promise<PrescriptionExtraction> {
+    let lastError: Error | null = null;
+    const targetModel = this.model || 'groq/compound';
+
+    for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let userContent: any;
+
+        if (fileBuffer && mimeType && (targetModel.includes('vision') || targetModel.includes('compound'))) {
+          userContent = [
+            {
+              type: 'text',
+              text: `Parse all medicines and details from this prescription image into structured JSON matching the schema.\nOCR Text if available:\n${ocrText || 'None'}`,
+            },
+            {
+              type: 'image_url',
+              image_url: {
+                url: `data:${mimeType};base64,${fileBuffer.toString('base64')}`,
+              },
+            },
+          ];
+        } else {
+          userContent = `Parse the following prescription OCR text:\n\n${ocrText}`;
+        }
+
+        const body: Record<string, unknown> = {
+          model: targetModel,
+          messages: [
+            { role: 'system', content: EXTRACTION_SYSTEM_PROMPT },
+            { role: 'user', content: userContent },
+          ],
+          temperature: 0.1,
+        };
+
+        // Groq supports JSON mode on text models like llama-3.3-70b-versatile
+        if (!targetModel.includes('vision')) {
+          body.response_format = { type: 'json_object' };
+        }
+
+        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${this.apiKey}`,
+          },
+          body: JSON.stringify(body),
+        });
+
+        if (!response.ok) {
+          const error = await response.text();
+          throw new Error(`Groq API error: ${response.status} - ${error}`);
+        }
+
+        const data = (await response.json()) as {
+          choices: Array<{ message: { content: string } }>;
+        };
+
+        const content = data.choices[0]?.message?.content;
+        if (!content) throw new Error('Empty response from Groq');
+
+        const cleaned = content.replace(/```json\n?|```/g, '').trim();
+        const parsed = JSON.parse(cleaned) as unknown;
+
+        const validated = prescriptionExtractionSchema.parse(parsed);
+        return { ...validated, rawText: ocrText };
+      } catch (err) {
+        lastError = err as Error;
+        logger.warn({ attempt, err }, 'Groq LLM extraction attempt failed');
+        if (attempt < this.maxRetries) {
+          await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
+        }
+      }
+    }
+
+    logger.error({ err: lastError }, 'All Groq LLM extraction attempts failed');
+    throw new AppError('AI_EXTRACTION_FAILED', 'Failed to extract prescription data using Groq AI. Please enter medications manually.', 422);
+  }
+
+  async explainMedication(context: MedicationExplanationContext): Promise<string> {
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${this.apiKey}`,
+      },
+      body: JSON.stringify({
+        model: this.model || 'groq/compound',
+        messages: [
+          { role: 'system', content: EXPLANATION_SYSTEM_PROMPT },
+          {
+            role: 'user',
+            content: `Explain this medication in simple terms: ${JSON.stringify(context)}`,
+          },
+        ],
+        temperature: 0.3,
+        max_tokens: 200,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new AppError('AI_EXTRACTION_FAILED', 'Failed to generate explanation using Groq', 500);
+    }
+
+    const data = (await response.json()) as { choices: Array<{ message: { content: string } }> };
+    return data.choices[0]?.message?.content ?? 'Unable to generate explanation at this time.';
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
 // Factory
 // ─────────────────────────────────────────────────────────────
 
@@ -396,6 +525,14 @@ export function createLLMProvider(): LLMProvider {
         return new MockLLMProvider();
       }
       return new GeminiLLMProvider(config.AI_API_KEY, config.AI_MODEL, config.AI_MAX_RETRIES);
+    case 'groq': {
+      const groqKey = config.GROQ_API_KEY || config.AI_API_KEY;
+      if (!groqKey) {
+        logger.warn('GROQ_API_KEY or AI_API_KEY not set for Groq, falling back to mock LLM');
+        return new MockLLMProvider();
+      }
+      return new GroqLLMProvider(groqKey, config.AI_MODEL, config.AI_MAX_RETRIES);
+    }
     default:
       logger.warn(`Unknown AI provider: ${config.AI_PROVIDER}, using mock`);
       return new MockLLMProvider();
@@ -403,3 +540,4 @@ export function createLLMProvider(): LLMProvider {
 }
 
 export const llmProvider = createLLMProvider();
+

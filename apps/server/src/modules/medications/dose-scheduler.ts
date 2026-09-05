@@ -80,7 +80,7 @@ export function generateDoseEvents(input: GenerateDosesInput): DoseEventInput[] 
   }
 
   const events: DoseEventInput[] = [];
-  const cap = addDays(new Date(), 365);
+  const cap = addDays(startDate, 365);
   const end = endDate ?? cap;
   const effectiveEnd = end < cap ? end : cap;
 
